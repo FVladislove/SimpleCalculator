@@ -1,32 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace SimpleCalculator
 {
     public partial class Form1 : Form
     {
-        List<RadioButton> firstOperandsRadioButtons = new List<RadioButton>();
-        List<TextBox> firstOperandInputs = new List<TextBox>();
+        private readonly List<RadioButton> _firstOperandsRadioButtons = new List<RadioButton>();
+        private readonly List<TextBox> _firstOperandInputs = new List<TextBox>();
 
-        List<RadioButton> secondOperandsRadioButtons = new List<RadioButton>();
-        List<TextBox> secondOperandInputs = new List<TextBox>();
-
-        private RadioButton _currentFirstGroupboxRadioButton = null;
-
-        private RadioButton _currentThirdGroupboxRadioButton = null;
+        private readonly List<RadioButton> _secondOperandsRadioButtons = new List<RadioButton>();
+        private readonly List<TextBox> _secondOperandInputs = new List<TextBox>();
 
         public Form1()
         {
             InitializeComponent();
         }
-
         private void ChangeNumOfGroupboxRadiobuttonsAndTextBoxes(
             GroupBox groupBox,
             List<RadioButton> radioButtons,
@@ -75,37 +65,42 @@ namespace SimpleCalculator
         }
 
         private void AddElementsToGroupboxList(
-            string parent,
+            string groupBoxName,
             List<RadioButton> radioButtons,
             List<TextBox> textBoxes,
             int numOfElements,
             int left,
             int top)
         {
+            if (radioButtons.Count >= 7)
+            {
+                numOfElements = 0;
+            }
+            else
+            {
+                if (radioButtons.Count + numOfElements > 7)
+                {
+                    numOfElements = 7 - radioButtons.Count;
+                }
+            }
             for (int i = 0; i < numOfElements; i++)
             {
                 var radioButton = new RadioButton();
                 radioButton.SetBounds(left, top + i * 40, 20, 20);
-                radioButton.Click += radioButton_Click;
+                switch (groupBoxName)
+                {
+                    case "groupBox1":
+                        radioButton.Click += firstGroupboxRadioButton_Click;
+                        break;
+                    case "groupBox3":
+                        radioButton.Click += secondGroupboxRadioButton_Click;
+                        break;
+                }
 
                 var textBox = new TextBox();
                 textBox.SetBounds(left + 30, top + i * 40, 60, 20);
                 textBox.Enabled = false;
-                
-                // indexing in the title begins from 0
-                // so since you remove certain elements
-                // there was a bug where several RadioButtons pointed to one TextBox
-                if (radioButtons.Count != 0)
-                {
-                    radioButton.Name = parent + @":radioButton:" + radioButtons.Count;
-                    textBox.Name = parent + @":textBox:" + radioButtons.Count;
-                }
-                else
-                {
-                    radioButton.Name = parent + @":radioButton:" + i;
-                    textBox.Name = parent + @":textBox:" + i;
-                }
-                
+
                 radioButtons.Add(radioButton);
                 textBoxes.Add(textBox);
             }
@@ -128,104 +123,79 @@ namespace SimpleCalculator
         {
             ChangeNumOfGroupboxRadiobuttonsAndTextBoxes(
                 groupBox1,
-                firstOperandsRadioButtons,
-                firstOperandInputs,
+                _firstOperandsRadioButtons,
+                _firstOperandInputs,
                 Convert.ToInt32(numericUpDown1.Value));
             ChangeNumOfGroupboxRadiobuttonsAndTextBoxes(
                 groupBox3,
-                secondOperandsRadioButtons,
-                secondOperandInputs,
+                _secondOperandsRadioButtons,
+                _secondOperandInputs,
                 Convert.ToInt32(numericUpDown2.Value));
-
-            if (_currentFirstGroupboxRadioButton != null &&
-                _currentThirdGroupboxRadioButton != null)
+            int firstOperandIdx = -1;
+            int secondOperandIdx = -1;
+            for (int i = 0; i < _firstOperandInputs.Count; i++)
             {
-                int firstIdx = Convert.ToInt32(_currentFirstGroupboxRadioButton
-                    .Name
-                    .Split(':')
-                    [2]);
-                int secondIdx = Convert.ToInt32(_currentThirdGroupboxRadioButton
-                    .Name
-                    .Split(':')
-                    [2]);
-
-                // there was a bug, when deleted element was saved in current elements
-                // do not change it to null, because initialization will take place again
-                if (firstOperandInputs.Count <= firstIdx || secondOperandInputs.Count <= secondIdx)
+                if (_firstOperandInputs[i].Enabled)
                 {
-                    return;
+                    firstOperandIdx = i;
                 }
-                if (float.TryParse(firstOperandInputs[firstIdx].Text, out float firstValue)
-                    && float.TryParse(secondOperandInputs[secondIdx].Text, out float secondValue))
+            }
+
+            for (int i = 0; i < _secondOperandInputs.Count; i++)
+            {
+                if (_secondOperandInputs[i].Enabled)
                 {
-                    if (AddCheckBox.Checked)
-                    {
-                        label1.Text = (firstValue + secondValue).ToString();
-                    }
+                    secondOperandIdx = i;
+                }
+            }
 
-                    if (MinusCheckBox.Checked)
-                    {
-                        label1.Text = (firstValue - secondValue).ToString();
-                    }
+            if (firstOperandIdx != -1 && secondOperandIdx != -1)
+            {
+                float.TryParse(_firstOperandInputs[firstOperandIdx].Text, out float firstOperand);
+                float.TryParse(_secondOperandInputs[secondOperandIdx].Text, out float secondOperand);
+                
+                if (AddRadioButton.Checked)
+                {
+                    ResultLabel.Text = (firstOperand + secondOperand).ToString();
+                }
 
-                    if (MultiplyCheckBox.Checked)
-                    {
-                        label1.Text = (firstValue * secondValue).ToString();
-                    }
+                if (MinusRadioButton.Checked)
+                {
+                    ResultLabel.Text = (firstOperand - secondOperand).ToString();
+                }
+
+                if (MultiplyRadioButton.Checked)
+                {
+                    ResultLabel.Text = (firstOperand * secondOperand).ToString();
+                }
+            }
+        }
+        private void firstGroupboxRadioButton_Click(object sender, EventArgs e)
+        {
+            for (int i = 0; i < _firstOperandInputs.Count; i++)
+            {
+                if (_firstOperandsRadioButtons[i].Checked)
+                {
+                    _firstOperandInputs[i].Enabled = true;
+                }
+                else
+                {
+                    _firstOperandInputs[i].Enabled = false;
                 }
             }
         }
 
-        private void radioButton_Click(object sender, EventArgs e)
+        private void secondGroupboxRadioButton_Click(object sender, EventArgs e)
         {
-            var radioButton = (RadioButton) sender;
-            var nameParts = radioButton.Name.Split(':');
-
-            if (nameParts[0] == "groupBox1")
+            for (int i = 0; i < _secondOperandsRadioButtons.Count; i++)
             {
-                if (_currentFirstGroupboxRadioButton != null)
+                if (_secondOperandsRadioButtons[i].Checked)
                 {
-                    int currentIdx = Convert.ToInt32(_currentFirstGroupboxRadioButton
-                        .Name
-                        .Split(':')[2]);
-                    
-                    // previous element
-                    firstOperandInputs[currentIdx].Enabled = false;
-                    // new element
-                    firstOperandInputs[Convert.ToInt32(nameParts[2])].Enabled = true;
-                    
-                    _currentFirstGroupboxRadioButton = radioButton;
+                    _secondOperandInputs[i].Enabled = true;
                 }
                 else
                 {
-                    // initialization
-                    firstOperandInputs[Convert.ToInt32(nameParts[2])].Enabled = true;
-
-                    _currentFirstGroupboxRadioButton = radioButton;
-                }
-            }
-
-            if (nameParts[0] == "groupBox3")
-            {
-                if (_currentThirdGroupboxRadioButton != null)
-                {
-                    int currentIdx = Convert.ToInt32(_currentThirdGroupboxRadioButton
-                        .Name
-                        .Split(':')
-                        [2]);
-                    
-                    // previous element
-                    secondOperandInputs[currentIdx].Enabled = false;
-                    // new element
-                    secondOperandInputs[Convert.ToInt32(nameParts[2])].Enabled = true;
-                    
-                    _currentThirdGroupboxRadioButton = radioButton;
-                }
-                else
-                {
-                    secondOperandInputs[Convert.ToInt32(nameParts[2])].Enabled = true;
-
-                    _currentThirdGroupboxRadioButton = radioButton;
+                    _secondOperandInputs[i].Enabled = false;
                 }
             }
         }

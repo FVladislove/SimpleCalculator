@@ -1,9 +1,15 @@
 ﻿using System;
+using System.Net.NetworkInformation;
+using System.Runtime.CompilerServices;
+using System.Windows.Forms;
 
 namespace SimpleCalculator
 {
-    public class Operation
+    public class Operation : TestClass
     {
+        public Operation()
+        {
+        }
         public static double Add(double firstOperand, double secondOperand)
         {
             return firstOperand + secondOperand;
